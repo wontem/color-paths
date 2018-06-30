@@ -4,15 +4,13 @@ import Field from './Field';
 import Particle from './Particle';
 import * as particleGenerators from './particleGenerators';
 
-import imgSrc from './map.png';
-
 // const WIDTH = window.innerWidth;
 // const HEIGHT = window.innerHeight;
-const WIDTH = 512;
-const HEIGHT = 512;
+// const WIDTH = 512;
+// const HEIGHT = 512;
 
-// const WIDTH = Math.min(window.innerWidth, window.innerHeight);
-// const HEIGHT = WIDTH;
+const WIDTH = Math.min(window.innerWidth, window.innerHeight);
+const HEIGHT = WIDTH;
 const RATIO = 2;
 
 const field = new Field((() => {
@@ -30,15 +28,11 @@ const field = new Field((() => {
     }
 
     // const n = noise.noise3D(particle.position.x / 100, particle.position.y / 100, step / 10);
+    const n = noise.noise3D(particle.position.x / 100, particle.position.y / 100, 0);
+    // const n = Math.random();
 
-    const x = Math.floor(particle.position.x);
-    const y = Math.floor(particle.position.y);
-    const angle = brightness && brightness[x] && typeof brightness[x][y] === 'number' ?
-      brightness[x][y] :
-      0;
-
-    particle.velocity = fromPolar(angle * Math.PI * 2, 2);
-    particle.velocity.add(new Vector2(2, 0));
+    particle.velocity = fromPolar((n ** -0.5) * Math.PI * 2, 2);
+    // particle.velocity.add(new Vector2(0, 2));
 
     return true;
   };
@@ -85,44 +79,6 @@ ctx.scale(RATIO, RATIO);
 ctx.fillStyle = 'black';
 ctx.fillRect(0, 0, WIDTH, HEIGHT);
 ctx.lineCap = 'round';
-
-const getBrightness = (imagePath: string): Promise<number[][]> => new Promise((resolve) => {
-  const img = new Image();
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-
-  const onLoad = () => {
-    img.removeEventListener('load', onLoad);
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-
-    const imageData: number[][] = [];
-
-    for (let x = 0; x < canvas.width; x += 1) {
-      const row: number[] = [];
-      imageData.push(row);
-
-      for (let y = 0; y < canvas.width; y += 1) {
-        const pixel = ctx.getImageData(x, y, 1, 1);
-        const [r, g, b] = pixel.data;
-
-        row.push((0.2126 * r + 0.7152 * g + 0.0722 * b) / 256);
-      }
-    }
-
-    resolve(imageData);
-  };
-  img.addEventListener('load', onLoad);
-  img.src = imagePath;
-});
-
-let brightness: number[][] = null;
-
-getBrightness(imgSrc).then((brightnessMap) => {
-  brightness = brightnessMap;
-  // particleGenerators.random(field, , WIDTH, HEIGHT);
-});
 
 window.addEventListener('mousemove', (e) => {
   if (e.buttons === 1) {
