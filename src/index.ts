@@ -1,8 +1,8 @@
-import * as THREE from 'three';
+import { Vector2 } from 'three';
+import OpenSimplexNoise from 'open-simplex-noise';
 import Field from './Field';
 import Particle from './Particle';
-
-
+import * as particleGenerators from './particleGenerators';
 
 // const WIDTH = window.innerWidth;
 // const HEIGHT = window.innerHeight;
@@ -10,17 +10,58 @@ import Particle from './Particle';
 const WIDTH = Math.min(window.innerWidth, window.innerHeight);
 const HEIGHT = WIDTH;
 const RATIO = 2;
-const STEP = 50;
 
-const field = new Field();
+const field = new Field((() => {
+  const noise = new OpenSimplexNoise(Date.now());
 
-for (let indexX = 0; indexX < WIDTH / STEP; indexX++) {
-  for (let indexY = 0; indexY < HEIGHT / STEP; indexY++) {
-    // const particle = new Particle(new Three.Vector2((indexX + 0.5) * STEP, (indexY + 0.5) * STEP));
-    const particle = new Particle(new THREE.Vector2(Math.random() * WIDTH, Math.random() * HEIGHT));
-    field.addParticle(particle);
+  const fromPolar = (phi: number, length: number): Vector2 => {
+    const x = length * Math.cos(phi);
+    const y = length * Math.sin(phi);
+    return new Vector2(x, y);
   }
-}
+
+  return (particle: Particle, step: number) => {
+    if (particle.age > 100) {
+      return false;
+    }
+
+    const angle = noise.noise3D(particle.position.x / 100, particle.position.y / 100, step / 10);
+    // const angle = noise.noise3D(particle.position.x / 100, particle.position.y / 100, particle.age / 10);
+    particle.velocity = fromPolar(angle * Math.PI * 2, 2);
+
+    return true;
+  };
+})());
+
+// const genField = new Field((() => {
+//   const noise = new OpenSimplexNoise(Date.now());
+
+//   const fromPolar = (phi: number, length: number): Vector2 => {
+//     const x = length * Math.cos(phi);
+//     const y = length * Math.sin(phi);
+//     return new Vector2(x, y);
+//   }
+
+//   return (particle: Particle, step: number) => {
+//     const angle = noise.noise3D(particle.position.x / 100, particle.position.y / 100, 0);
+//     particle.velocity = fromPolar(angle * Math.PI * 2, 10);
+
+//     field.addParticle(new Particle(new Vector2(
+//       (particle.position.x % WIDTH + WIDTH) % WIDTH,
+//       (particle.position.y % HEIGHT + HEIGHT) % HEIGHT,
+//     )));
+
+//     return true;
+//   };
+// })());
+// particleGenerators.random(genField, 1, WIDTH, HEIGHT);
+
+// particleGenerators.grid(field, 50, 50, WIDTH, HEIGHT);
+particleGenerators.random(field, 100, WIDTH, HEIGHT);
+
+setInterval(() => {
+  particleGenerators.random(field, 100, WIDTH, HEIGHT);
+}, 100);
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -35,23 +76,33 @@ canvas.style.left = '0';
 
 ctx.scale(RATIO, RATIO);
 
+// ctx.globalCompositeOperation = 'screen';
+
 ctx.fillStyle = 'black';
 ctx.fillRect(0, 0, WIDTH, HEIGHT);
-// ctx.lineCap = 'round';
+ctx.lineCap = 'round';
+
+window.addEventListener('mousemove', (e) => {
+  if (e.buttons === 1) {
+    console.log(e.clientX, e.clientY);
+    field.addParticle(new Particle(new Vector2(e.clientX, e.clientY)));
+  }
+});
 
 const normalizedSin = (angle: number) => {
   return (Math.sin(angle) + 1) / 2;
 }
 
-let step = 0;
+const normalizedCos = (angle: number) => {
+  return (Math.cos(angle) + 1) / 2;
+}
+
 const anim = () => {
-  field.tick();
-
-
-  // ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-  // ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  if (field.step % 5 === 0) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  }
   // ctx.strokeStyle = `hsl(${step % 360}, 100%, 60%)`;
-  ctx.strokeStyle = `hsl(${normalizedSin(step / 10) * 360}, 100%, 60%)`;
   // ctx.strokeStyle = `hsl(${normalizedSin(step / 10) * 360}, 100%, 60%, ${normalizedSin(step / 19)})`;
   // ctx.strokeStyle = `rgba(${
   //   normalizedSin(step / 13) * 255
@@ -62,23 +113,28 @@ const anim = () => {
   // }, ${
   //   normalizedSin(step / 10)
   // })`;
-  // ctx.lineWidth = normalizedSin(step / 2) * 5 + 1;
-  ctx.lineWidth = 1;
+  // ctx.lineWidth = 1;
 
-  ctx.beginPath();
   for (const particle of field.particles) {
+    ctx.lineWidth = normalizedSin(particle.age / 20) ** 80 * 5 + 1;
+    // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 120}, 100%, 60%, ${1 || Math.max((12 - particle.age) / 12, 0)})`;
+    ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * 80 - 100}, 100%, 60%, 1)`;
+    // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 360}, 100%, 60%, 1)`;
+    ctx.beginPath();
     const prevPosition = particle.position.clone().sub(particle.velocity);
     ctx.moveTo(prevPosition.x, prevPosition.y);
     ctx.lineTo(particle.position.x, particle.position.y);
+    ctx.stroke();
   }
-  ctx.stroke();
+
+  field.tick();
+  // genField.tick();
 
   // for (const particle of field.particles) {
   //   updateLine(particle);
   //   drawLine(ctx, getLine(particle));
   // }
 
-  step += 1;
   requestAnimationFrame(anim);
 }
 requestAnimationFrame(anim);
