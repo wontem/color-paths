@@ -7,16 +7,11 @@
     "noImplicitAny": true,
     "module": "esnext",
     "moduleResolution": "node",
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
     "jsx": "react",
     "lib": [
       "es2017",
       "dom",
       "dom.iterable"
-    ],
-  },
-  "include": [
-    "index.d.ts"
-  ]
+    ]
+  }
 }

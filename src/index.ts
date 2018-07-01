@@ -3,7 +3,6 @@ import OpenSimplexNoise from 'open-simplex-noise';
 import Field from './Field';
 import Particle from './Particle';
 import * as particleGenerators from './particleGenerators';
-
 // const WIDTH = window.innerWidth;
 // const HEIGHT = window.innerHeight;
 // const WIDTH = 512;
@@ -31,7 +30,7 @@ const field = new Field((() => {
     const n = noise.noise3D(particle.position.x / 100, particle.position.y / 100, 0);
     // const n = Math.random();
 
-    particle.velocity = fromPolar((n ** -0.5) * Math.PI * 2, 2);
+    particle.velocity = fromPolar(Math.abs(n) ** (-0.5) * Math.PI * 2, n < 0 ? 0 : 2);
     // particle.velocity.add(new Vector2(0, 2));
 
     return true;
