@@ -1,3 +1,4 @@
+import { vec2 } from 'gl-matrix';
 import Particle from './Particle';
 
 export type Transform = (particle: Particle, step: number) => boolean;
@@ -27,7 +28,7 @@ export default class Field {
     for (const particle of this.particles) {
       const keepAlive = this.transform(particle, this.step);
       if (keepAlive) {
-        particle.position.add(particle.velocity);
+        vec2.add(particle.position, particle.position, particle.velocity);
         particle.age += 1;
       } else {
         this.removeParticle(particle);

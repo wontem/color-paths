@@ -1,64 +1,112 @@
-import { Vector2 } from 'three';
+import * as dat from 'dat.gui';
+import { vec2 } from 'gl-matrix';
 import OpenSimplexNoise from 'open-simplex-noise';
 import Field from './Field';
 import Particle from './Particle';
 import * as particleGenerators from './particleGenerators';
+
 // const WIDTH = window.innerWidth;
 // const HEIGHT = window.innerHeight;
 // const WIDTH = 512;
 // const HEIGHT = 512;
-
 const WIDTH = Math.min(window.innerWidth, window.innerHeight);
 const HEIGHT = WIDTH;
 const RATIO = 2;
 
+const clearCanvas = () => {
+  ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  field.particles = new Set();
+  field.step = 0;
+};
+
+const randomRange = (min: number, max: number, step: number): number => {
+  return Math.floor((Math.random() * (max - min) + min) / step) * step;
+};
+
+const randomBool = (): boolean => {
+  return Math.random() < 0.5;
+};
+
+const options = {
+  generateCount: 10,
+  liveTime: 10,
+  speed: 2,
+  produceEveryFrame: 1,
+  playZ: true,
+  produceOnlyOnce: true,
+  multiply: 10,
+  scale: 100,
+  power: 1,
+  hue: 0,
+  hueRange: 80,
+  removeNegative: true,
+  showZeros: true,
+  clear: clearCanvas,
+  random: () => {
+    clearCanvas();
+
+    options.generateCount = randomRange(1, 100, 1);
+    options.liveTime = randomRange(1, 100, 1);
+    options.speed = randomRange(-5, 5, 1);
+    options.produceEveryFrame = randomRange(1, 10, 1);
+    options.produceOnlyOnce = randomBool();
+    options.playZ = randomBool();
+    options.multiply = randomRange(1, 100, 1);
+    options.scale = randomRange(1, 1000, 1);
+    options.power = randomRange(0, 5, 1);
+    options.hue = randomRange(0, 360, 1);
+    options.hueRange = randomRange(0, 360, 1);
+    options.removeNegative = randomBool();
+    options.showZeros = randomBool();
+
+    for (const controller of gui.__controllers) {
+      controller.updateDisplay();
+    }
+  },
+};
+
+const gui = new dat.GUI();
+
+gui.add(options, 'generateCount', 1, 100).onChange(clearCanvas);
+gui.add(options, 'liveTime', 1, 100).onChange(clearCanvas);
+gui.add(options, 'speed', -5, 5).onChange(clearCanvas);
+gui.add(options, 'produceEveryFrame', 1, 10, 1).onChange(clearCanvas);
+gui.add(options, 'produceOnlyOnce').onChange(clearCanvas);
+gui.add(options, 'removeNegative').onChange(clearCanvas);
+gui.add(options, 'showZeros').onChange(clearCanvas);
+gui.add(options, 'playZ').onChange(clearCanvas);
+gui.add(options, 'multiply', 1, 100).onChange(clearCanvas);
+gui.add(options, 'scale', 1, 1000).onChange(clearCanvas);
+gui.add(options, 'power', 0, 5).onChange(clearCanvas);
+gui.add(options, 'hue', 0, 360).onChange(clearCanvas);
+gui.add(options, 'hueRange', 0, 360).onChange(clearCanvas);
+gui.add(options, 'clear');
+gui.add(options, 'random');
+
 const field = new Field((() => {
   const noise = new OpenSimplexNoise(Date.now());
 
-  const fromPolar = (phi: number, length: number): Vector2 => {
+  const fromPolar = (phi: number, length: number): vec2 => {
     const x = length * Math.cos(phi);
     const y = length * Math.sin(phi);
-    return new Vector2(x, y);
+    return vec2.fromValues(x, y);
   };
 
   return (particle: Particle, step: number) => {
-    if (particle.age > 100) {
+    if (particle.age > options.liveTime) {
       return false;
     }
 
-    // const n = noise.noise3D(particle.position.x / 100, particle.position.y / 100, step / 10);
-    const n = noise.noise3D(particle.position.x / 100, particle.position.y / 100, 0);
-    // const n = Math.random();
+    const n = noise.noise3D(particle.position[0] / options.scale, particle.position[1] / options.scale, options.playZ ? step / options.multiply : 0);
 
-    particle.velocity = fromPolar(Math.abs(n) ** (-0.5) * Math.PI * 2, n < 0 ? 0 : 2);
-    // particle.velocity.add(new Vector2(0, 2));
+    const angle = n * 2 ** options.power;
+
+    particle.velocity = fromPolar(angle * Math.PI, options.removeNegative && n < 0 ? 0 : options.speed);
 
     return true;
   };
 })());
-
-// const genField = new Field((() => {
-//   const noise = new OpenSimplexNoise(Date.now());
-
-//   const fromPolar = (phi: number, length: number): Vector2 => {
-//     const x = length * Math.cos(phi);
-//     const y = length * Math.sin(phi);
-//     return new Vector2(x, y);
-//   }
-
-//   return (particle: Particle, step: number) => {
-//     const angle = noise.noise3D(particle.position.x / 100, particle.position.y / 100, 0);
-//     particle.velocity = fromPolar(angle * Math.PI * 2, 10);
-
-//     field.addParticle(new Particle(new Vector2(
-//       (particle.position.x % WIDTH + WIDTH) % WIDTH,
-//       (particle.position.y % HEIGHT + HEIGHT) % HEIGHT,
-//     )));
-
-//     return true;
-//   };
-// })());
-// particleGenerators.random(genField, 1, WIDTH, HEIGHT);
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -73,16 +121,18 @@ canvas.style.left = '0';
 
 ctx.scale(RATIO, RATIO);
 
-// ctx.globalCompositeOperation = 'screen';
-
 ctx.fillStyle = 'black';
 ctx.fillRect(0, 0, WIDTH, HEIGHT);
 ctx.lineCap = 'round';
 
 window.addEventListener('mousemove', (e) => {
   if (e.buttons === 1) {
-    field.addParticle(new Particle(new Vector2(e.clientX, e.clientY)));
+    field.addParticle(new Particle(vec2.fromValues(e.clientX, e.clientY)));
   }
+});
+
+window.addEventListener('click', (e) => {
+  field.addParticle(new Particle(vec2.fromValues(e.clientX, e.clientY)));
 });
 
 const normalizedSin = (angle: number) => {
@@ -93,49 +143,36 @@ const normalizedCos = (angle: number) => {
   return (Math.cos(angle) + 1) / 2;
 };
 
+const dots = new OpenSimplexNoise(Date.now());
+
 const anim = () => {
-  if (field.step % 5 === 0) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-  }
-
-  if (field.step % 3 === 0) {
+  if (
+    options.produceOnlyOnce ?
+      field.step === 0 :
+      field.step % options.produceEveryFrame === 0
+  ) {
     // particleGenerators.grid(field, 50, 50, WIDTH, HEIGHT);
-    particleGenerators.random(field, 100, WIDTH, HEIGHT);
+    particleGenerators.random(field, options.generateCount, WIDTH, HEIGHT);
   }
-
-  // ctx.strokeStyle = `hsl(${step % 360}, 100%, 60%)`;
-  // ctx.strokeStyle = `hsl(${normalizedSin(step / 10) * 360}, 100%, 60%, ${normalizedSin(step / 19)})`;
-  // ctx.strokeStyle = `rgba(${
-  //   normalizedSin(step / 13) * 255
-  // }, ${
-  //   127
-  // }, ${
-  //   normalizedSin(step / 7) * 255
-  // }, ${
-  //   normalizedSin(step / 10)
-  // })`;
-  // ctx.lineWidth = 1;
 
   for (const particle of field.particles) {
+    if (!options.showZeros && particle.velocity[0] === particle.velocity[1] && particle.velocity[0] === 0) {
+      continue;
+    }
+    // ctx.lineWidth = ((dots.noise2D(particle.age / 10, 0) + 1) / 2) * 3 + 1;
     // ctx.lineWidth = normalizedSin(particle.age / 20) ** 80 * 5 + 1;
-    // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 120}, 100%, 60%, ${1 || Math.max((12 - particle.age) / 12, 0)})`;
-    ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * 80 - 100}, 100%, 60%, 1)`;
+    // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 120}, 100%, 60%, 1)`;
+    ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * options.hueRange + options.hue}, 100%, 60%, 1)`;
+    // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * 80 - 100 - 60}, 100%, 60%, 1)`;
     // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 360}, 100%, 60%, 1)`;
     ctx.beginPath();
-    const prevPosition = particle.position.clone().sub(particle.velocity);
-    ctx.moveTo(prevPosition.x, prevPosition.y);
-    ctx.lineTo(particle.position.x, particle.position.y);
+    const prevPosition = vec2.sub(vec2.create(), particle.position, particle.velocity);
+    ctx.moveTo(prevPosition[0], prevPosition[1]);
+    ctx.lineTo(particle.position[0], particle.position[1]);
     ctx.stroke();
   }
 
   field.tick();
-  // genField.tick();
-
-  // for (const particle of field.particles) {
-  //   updateLine(particle);
-  //   drawLine(ctx, getLine(particle));
-  // }
 
   requestAnimationFrame(anim);
 };

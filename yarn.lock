@@ -39,15 +39,9 @@
   version "0.7.1"
   resolved "https://registry.yarnpkg.com/@types/dat.gui/-/dat.gui-0.7.1.tgz#30949dbb6694fed67af0e1fb36c854e329fec188"
 
-"@types/three@^0.92.10":
-  version "0.92.11"
-  resolved "https://registry.yarnpkg.com/@types/three/-/three-0.92.11.tgz#9b5e80a2259dc0853748aafae443be9a631aa013"
-  dependencies:
-    "@types/webvr-api" "*"
-
-"@types/webvr-api@*":
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/@types/webvr-api/-/webvr-api-0.0.34.tgz#8fa49028de925c7b8bce3d559d3374ce2c89ee28"
+"@types/gl-matrix@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@types/gl-matrix/-/gl-matrix-2.4.0.tgz#a27affbaf3a849894817f648bf68ac710dedf4a3"
 
 "@webassemblyjs/ast@1.5.12":
   version "1.5.12"
@@ -1615,6 +1609,10 @@ get-stream@^3.0.0:
 get-value@^2.0.3, get-value@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/get-value/-/get-value-2.0.6.tgz#dc15ca1c672387ca76bd37ac0a395ba2042a2c28"
+
+gl-matrix@^2.6.1:
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/gl-matrix/-/gl-matrix-2.6.1.tgz#1bc7f7b396f4ae80abdb4db9a98cd07d170b9004"
 
 glob-parent@^3.1.0:
   version "3.1.0"
@@ -3966,10 +3964,6 @@ thenify-all@^1.0.0:
   resolved "https://registry.yarnpkg.com/thenify/-/thenify-3.3.0.tgz#e69e38a1babe969b0108207978b9f62b88604839"
   dependencies:
     any-promise "^1.0.0"
-
-three@^0.94.0:
-  version "0.94.0"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.94.0.tgz#4ce6db7f2bfbf79c2d73444aa6e3cfc08a32d762"
 
 through2@^2.0.0:
   version "2.0.3"
