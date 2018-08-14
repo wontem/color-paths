@@ -7,11 +7,11 @@ import * as particleGenerators from './particleGenerators';
 
 // const WIDTH = window.innerWidth;
 // const HEIGHT = window.innerHeight;
-// const WIDTH = 512;
-// const HEIGHT = 512;
-const WIDTH = Math.min(window.innerWidth, window.innerHeight);
-const HEIGHT = WIDTH;
-const RATIO = 2;
+const WIDTH = 1240;
+const HEIGHT = 1748;
+// const WIDTH = Math.min(window.innerWidth, window.innerHeight);
+// const HEIGHT = WIDTH;
+const RATIO = 1;
 
 const clearCanvas = () => {
   ctx.fillStyle = 'rgba(0, 0, 0, 1)';
@@ -37,6 +37,8 @@ const options = {
   produceOnlyOnce: true,
   multiply: 10,
   scale: 100,
+  angle: 0,
+  play: true,
   power: 1,
   hue: 0,
   hueRange: 80,
@@ -57,6 +59,7 @@ const options = {
     options.power = randomRange(0, 5, 1);
     options.hue = randomRange(0, 360, 1);
     options.hueRange = randomRange(0, 360, 1);
+    options.angle = randomRange(0, 360, 1);
     options.removeNegative = randomBool();
     options.showZeros = randomBool();
 
@@ -81,8 +84,10 @@ gui.add(options, 'scale', 1, 1000).onChange(clearCanvas);
 gui.add(options, 'power', 0, 5).onChange(clearCanvas);
 gui.add(options, 'hue', 0, 360).onChange(clearCanvas);
 gui.add(options, 'hueRange', 0, 360).onChange(clearCanvas);
+gui.add(options, 'angle', 0, 360).onChange(clearCanvas);
 gui.add(options, 'clear');
 gui.add(options, 'random');
+gui.add(options, 'play');
 
 const field = new Field((() => {
   const noise = new OpenSimplexNoise(Date.now());
@@ -100,7 +105,7 @@ const field = new Field((() => {
 
     const n = noise.noise3D(particle.position[0] / options.scale, particle.position[1] / options.scale, options.playZ ? step / options.multiply : 0);
 
-    const angle = n * 2 ** options.power;
+    const angle = n * 2 ** options.power + options.angle / 180;
 
     particle.velocity = fromPolar(angle * Math.PI, options.removeNegative && n < 0 ? 0 : options.speed);
 
@@ -113,7 +118,8 @@ const ctx = canvas.getContext('2d');
 document.body.appendChild(canvas);
 canvas.width = WIDTH * RATIO;
 canvas.height = HEIGHT * RATIO;
-canvas.style.transform = `scale(${1 / RATIO}, ${1 / RATIO})`;
+canvas.style.height = '100%';
+// canvas.style.transform = `scale(${1 / RATIO}, ${1 / RATIO})`;
 canvas.style.transformOrigin = 'left top';
 canvas.style.position = 'absolute';
 canvas.style.top = '0';
@@ -146,6 +152,11 @@ const normalizedCos = (angle: number) => {
 const dots = new OpenSimplexNoise(Date.now());
 
 const anim = () => {
+  requestAnimationFrame(anim);
+  if (!options.play) {
+    return;
+  }
+
   if (
     options.produceOnlyOnce ?
       field.step === 0 :
@@ -160,7 +171,8 @@ const anim = () => {
       continue;
     }
     // ctx.lineWidth = ((dots.noise2D(particle.age / 10, 0) + 1) / 2) * 3 + 1;
-    // ctx.lineWidth = normalizedSin(particle.age / 20) ** 80 * 5 + 1;
+    ctx.lineWidth = 2;
+    // ctx.lineWidth = (normalizedSin(particle.age / 20) ** 80 * 5 + 1) * 2;
     // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 120}, 100%, 60%, 1)`;
     ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * options.hueRange + options.hue}, 100%, 60%, 1)`;
     // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * 80 - 100 - 60}, 100%, 60%, 1)`;
@@ -173,7 +185,5 @@ const anim = () => {
   }
 
   field.tick();
-
-  requestAnimationFrame(anim);
 };
 requestAnimationFrame(anim);
