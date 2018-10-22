@@ -14,8 +14,10 @@ const HEIGHT = 1748;
 const RATIO = 1;
 
 const clearCanvas = () => {
-  ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'black';
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.globalCompositeOperation = options.blendMode;
   field.particles = new Set();
   field.step = 0;
 };
@@ -44,6 +46,8 @@ const options = {
   hueRange: 80,
   removeNegative: true,
   showZeros: true,
+  opacity: 1,
+  blendMode: 'source-over',
   clear: clearCanvas,
   random: () => {
     clearCanvas();
@@ -85,6 +89,35 @@ gui.add(options, 'power', 0, 5).onChange(clearCanvas);
 gui.add(options, 'hue', 0, 360).onChange(clearCanvas);
 gui.add(options, 'hueRange', 0, 360).onChange(clearCanvas);
 gui.add(options, 'angle', 0, 360).onChange(clearCanvas);
+gui.add(options, 'opacity', 0, 1).onChange(clearCanvas);
+gui.add(options, 'blendMode', [
+  'source-over',
+  'source-in',
+  'source-out',
+  'source-atop',
+  'destination-over',
+  'destination-in',
+  'destination-out',
+  'destination-atop',
+  'lighter',
+  'copy',
+  'xor',
+  'multiply',
+  'screen',
+  'overlay',
+  'darken',
+  'lighten',
+  'color-dodge',
+  'color-burn',
+  'hard-light',
+  'soft-light',
+  'difference',
+  'exclusion',
+  'hue',
+  'saturation',
+  'color',
+  'luminosity',
+]).onChange(clearCanvas);
 gui.add(options, 'clear');
 gui.add(options, 'random');
 gui.add(options, 'play');
@@ -105,9 +138,9 @@ const field = new Field((() => {
 
     const n = noise.noise3D(particle.position[0] / options.scale, particle.position[1] / options.scale, options.playZ ? step / options.multiply : 0);
 
-    const angle = n * 2 ** options.power + options.angle / 180;
+    const angle = n * 2 ** options.power + options.angle / 180 * Math.PI;
 
-    particle.velocity = fromPolar(angle * Math.PI, options.removeNegative && n < 0 ? 0 : options.speed);
+    particle.velocity = fromPolar(angle, options.removeNegative && n < 0 ? 0 : options.speed);
 
     return true;
   };
@@ -162,7 +195,7 @@ const anim = () => {
       field.step === 0 :
       field.step % options.produceEveryFrame === 0
   ) {
-    // particleGenerators.grid(field, 50, 50, WIDTH, HEIGHT);
+    // particleGenerators.grid(field, 100, 100, WIDTH, HEIGHT);
     particleGenerators.random(field, options.generateCount, WIDTH, HEIGHT);
   }
 
@@ -174,9 +207,11 @@ const anim = () => {
     ctx.lineWidth = 2;
     // ctx.lineWidth = (normalizedSin(particle.age / 20) ** 80 * 5 + 1) * 2;
     // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 120}, 100%, 60%, 1)`;
-    ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * options.hueRange + options.hue}, 100%, 60%, 1)`;
+    // ctx.strokeStyle = `hsla(0, 0%, 0%, .03)`;
     // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * 80 - 100 - 60}, 100%, 60%, 1)`;
     // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 360}, 100%, 60%, 1)`;
+    // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * options.hueRange + options.hue}, 100%, 60%, ${options.opacity})`;
+    ctx.strokeStyle = `hsla(${particle.age / options.liveTime * options.hueRange + options.hue}, 100%, 60%, ${options.opacity})`;
     ctx.beginPath();
     const prevPosition = vec2.sub(vec2.create(), particle.position, particle.velocity);
     ctx.moveTo(prevPosition[0], prevPosition[1]);
