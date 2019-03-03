@@ -77,8 +77,11 @@ const options = {
 
 const gui = new dat.GUI();
 
+gui.useLocalStorage = true;
+gui.remember(options);
+
 gui.add(options, 'generateCount', 1, 100).onChange(clearCanvas);
-gui.add(options, 'liveTime', 1, 100).onChange(clearCanvas);
+gui.add(options, 'liveTime', 1, 200).onChange(clearCanvas);
 gui.add(options, 'speed', -5, 5).onChange(clearCanvas);
 gui.add(options, 'produceEveryFrame', 1, 10, 1).onChange(clearCanvas);
 gui.add(options, 'produceOnlyOnce').onChange(clearCanvas);
@@ -192,15 +195,15 @@ ctx.fillStyle = 'black';
 ctx.fillRect(0, 0, WIDTH, HEIGHT);
 ctx.lineCap = 'round';
 
-window.addEventListener('mousemove', (e) => {
-  if (e.buttons === 1) {
-    field.addParticle(new Particle(vec2.fromValues(e.clientX, e.clientY)));
-  }
-});
+// window.addEventListener('mousemove', (e) => {
+//   if (e.buttons === 1) {
+//     field.addParticle(new Particle(vec2.fromValues(e.clientX, e.clientY)));
+//   }
+// });
 
-window.addEventListener('click', (e) => {
-  field.addParticle(new Particle(vec2.fromValues(e.clientX, e.clientY)));
-});
+// window.addEventListener('click', (e) => {
+//   field.addParticle(new Particle(vec2.fromValues(e.clientX, e.clientY)));
+// });
 
 const dots = new OpenSimplexNoise(Date.now());
 
@@ -225,9 +228,19 @@ const anim = () => {
     }
 
     let h;
-    h = math.norm(particle.age / options.liveTime * options.hueRange + options.hue, 0, 360);
+    h = math.map(Math.sin(particle.age / options.liveTime * Math.PI * 2 * 1.5 - Math.PI / 2), -1, 1, 0, 1);
+    h = h * options.hueRange + options.hue;
+    // h = math.norm(3 * particle.age / options.liveTime * options.hueRange + options.hue, 0, 360);
+    // h = math.norm(particle.age / options.liveTime * options.hueRange + options.hue, 0, 360);
     // h = easing.easeOutCubic(h);
-    const color = `hsla(${h * 360}, 100%, 60%, ${options.opacity})`;
+
+    let o;
+
+    o = options.opacity;
+    // o = o * Math.sin(particle.age / options.liveTime * Math.PI);
+    o = o * math.map(Math.sin(particle.age / options.liveTime * Math.PI * 2 - Math.PI / 2), -1, 1, 0, 1);
+
+    const color = `hsla(${h}, 100%, 60%, ${o})`;
 
     switch (options.renderingType) {
       case 'pixel': {
@@ -238,11 +251,11 @@ const anim = () => {
       case 'line': {
         // ctx.lineWidth = math.map(dots.noise2D(particle.age / 10, 0), -1, 1, 1, 8);
         ctx.lineWidth = 2;
-        // ctx.lineWidth = math.map(Math.sin(particle.age / 4), -1, 1, 4, 20);
-        // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 120}, 100%, 60%, 1)`;
+        ctx.lineWidth = math.map(Math.sin(particle.age / options.liveTime * Math.PI * 2 * 10 - Math.PI / 2), -1, 1, 1, 10);
+        // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) / 2 + .5 * 120}, 100%, 60%, 1)`;
         // ctx.strokeStyle = `hsla(0, 0%, 0%, .03)`;
         // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * 80 - 100 - 60}, 100%, 60%, 1)`;
-        // ctx.strokeStyle = `hsla(${normalizedSin(particle.age / 10) * 360}, 100%, 60%, 1)`;
+        // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) / 2 + .5 * 360}, 100%, 60%, 1)`;
         // ctx.strokeStyle = `hsla(${Math.sin(particle.age / 10) * options.hueRange + options.hue}, 100%, 60%, ${options.opacity})`;
         ctx.strokeStyle = color;
         ctx.beginPath();
